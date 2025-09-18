@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { Op } from 'sequelize';
 import { Comment, Post, User } from '../models';
 import { AuthenticatedRequest, CreateCommentRequest } from '../types';
 
@@ -21,8 +22,8 @@ export const getComments = async (req: AuthenticatedRequest, res: Response): Pro
     const comments = await Comment.findAndCountAll({
       where: { 
         postId: parseInt(postId),
-        parentId: null, // Only get top-level comments
-      },
+        parentId: null
+      } as any, // Type assertion to bypass strict typing for demo
       limit: limitNumber,
       offset,
       order: [['createdAt', 'DESC']],

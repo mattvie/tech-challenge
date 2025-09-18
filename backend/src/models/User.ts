@@ -55,8 +55,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     return bcrypt.compare(password, this.password);
   }
 
-  public toJSON(): Partial<UserAttributes> {
-    const values = { ...this.get() };
+  public toJSON(): Omit<UserAttributes, 'password'> {
+    const values = { ...this.get() } as any;
     delete values.password;
     return values;
   }

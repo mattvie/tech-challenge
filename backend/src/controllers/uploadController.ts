@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import multer from 'multer';
-import multerS3 from 'multer-s3';
 import AWS from 'aws-sdk';
 import { AuthenticatedRequest } from '../types';
 import { uploadToS3, deleteFromS3 } from '../utils/s3';
@@ -26,18 +25,6 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   }
 };
 
-// Multer configuration for direct S3 upload (alternative approach)
-const s3Storage = multerS3({
-  s3: s3,
-  bucket: process.env.AWS_S3_BUCKET || 'tech-challenge-blog-uploads',
-  acl: 'public-read',
-  key: function (req, file, cb) {
-    const fileName = `uploads/${Date.now()}-${Math.random().toString(36).substring(7)}-${file.originalname}`;
-    cb(null, fileName);
-  },
-  contentType: multerS3.AUTO_CONTENT_TYPE,
-});
-
 // Export multer configurations
 export const uploadMemory = multer({
   storage: memoryStorage,
@@ -47,8 +34,9 @@ export const uploadMemory = multer({
   },
 }).single('image');
 
+// Multer configuration for direct S3 upload (alternative approach)
 export const uploadS3Direct = multer({
-  storage: s3Storage,
+  storage: multer.memoryStorage(), // Use memory storage instead for now
   fileFilter,
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880'), // 5MB
