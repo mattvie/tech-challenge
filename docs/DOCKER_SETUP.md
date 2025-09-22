@@ -23,8 +23,6 @@ This document explains the Docker configuration for our Tech Challenge Blog appl
 ## Current Configuration (docker-compose.yml)
 
 ```yaml
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -92,28 +90,32 @@ networks:
 ## Intentional Issues for Evaluation
 
 ### 1. Missing Restart Policies
+
 **Issue**: Containers don't automatically restart on failure.
 
 **Fix**:
+
 ```yaml
 services:
   postgres:
     # ... other config
     restart: unless-stopped
-    
+
   backend:
     # ... other config
     restart: unless-stopped
-    
+
   frontend:
     # ... other config
     restart: unless-stopped
 ```
 
 ### 2. No Health Checks
+
 **Issue**: Docker doesn't know if services are actually healthy.
 
 **Fix**:
+
 ```yaml
 services:
   postgres:
@@ -123,7 +125,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      
+
   backend:
     # ... other config
     healthcheck:
@@ -132,7 +134,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
-      
+
   frontend:
     # ... other config
     healthcheck:
@@ -143,7 +145,9 @@ services:
 ```
 
 ### 3. Inefficient Dockerfile Layers
+
 **Backend Dockerfile Issues**:
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -163,6 +167,7 @@ CMD ["npm", "start"]
 ```
 
 **Fixed Backend Dockerfile**:
+
 ```dockerfile
 FROM node:18-alpine AS builder
 
@@ -212,12 +217,15 @@ CMD ["npm", "start"]
 ```
 
 ### 4. Security Issues
+
 **Issues**:
+
 - Running as root user
 - Exposing sensitive environment variables
 - No secrets management
 
 **Fixes**:
+
 ```yaml
 services:
   backend:
@@ -242,9 +250,11 @@ secrets:
 ```
 
 ### 5. Missing Resource Limits
+
 **Issue**: Containers can consume unlimited resources.
 
 **Fix**:
+
 ```yaml
 services:
   postgres:
@@ -253,26 +263,27 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: '0.5'
+          cpus: "0.5"
         reservations:
           memory: 256M
-          cpus: '0.25'
-          
+          cpus: "0.25"
+
   backend:
     # ... other config
     deploy:
       resources:
         limits:
           memory: 256M
-          cpus: '0.3'
+          cpus: "0.3"
         reservations:
           memory: 128M
-          cpus: '0.1'
+          cpus: "0.1"
 ```
 
 ## Docker Commands
 
 ### Basic Commands
+
 ```bash
 # Build and start all services
 docker-compose up -d
@@ -300,6 +311,7 @@ docker-compose ps
 ```
 
 ### Development Commands
+
 ```bash
 # Start only database
 docker-compose up -d postgres
@@ -315,6 +327,7 @@ docker stats
 ```
 
 ### Production Commands
+
 ```bash
 # Production build
 docker-compose -f docker-compose.prod.yml up -d
@@ -333,6 +346,7 @@ docker-compose exec -i postgres psql -U admin tech_challenge_blog < backup.sql
 ## Multi-Stage Builds
 
 ### Optimized Frontend Dockerfile
+
 ```dockerfile
 # Build stage
 FROM node:18-alpine AS builder
@@ -373,8 +387,9 @@ CMD ["nginx", "-g", "daemon off;"]
 ## Environment-Specific Configurations
 
 ### docker-compose.dev.yml
+
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
@@ -401,8 +416,9 @@ services:
 ```
 
 ### docker-compose.prod.yml
+
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -411,7 +427,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '1'
+          cpus: "1"
 
   backend:
     build:
@@ -424,7 +440,7 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: '0.5'
+          cpus: "0.5"
 
   frontend:
     build:
@@ -435,7 +451,7 @@ services:
       resources:
         limits:
           memory: 128M
-          cpus: '0.25'
+          cpus: "0.25"
 
   nginx:
     image: nginx:alpine
@@ -454,6 +470,7 @@ services:
 ## Docker Networking
 
 ### Custom Networks
+
 ```yaml
 networks:
   frontend-network:
@@ -462,19 +479,19 @@ networks:
     driver: bridge
   database-network:
     driver: bridge
-    internal: true  # Database not accessible from outside
+    internal: true # Database not accessible from outside
 
 services:
   frontend:
     networks:
       - frontend-network
-      
+
   backend:
     networks:
       - frontend-network
       - backend-network
       - database-network
-      
+
   postgres:
     networks:
       - database-network
@@ -483,6 +500,7 @@ services:
 ## Monitoring and Logging
 
 ### Logging Configuration
+
 ```yaml
 services:
   backend:
@@ -502,6 +520,7 @@ services:
 ```
 
 ### Monitoring with Health Checks
+
 ```yaml
 services:
   backend:
@@ -521,6 +540,7 @@ services:
 ### Common Issues
 
 1. **Port Conflicts**
+
 ```bash
 # Check what's using the port
 lsof -i :3000
@@ -531,6 +551,7 @@ kill -9 $(lsof -ti:3000)
 ```
 
 2. **Volume Issues**
+
 ```bash
 # Remove all volumes
 docker-compose down -v
@@ -540,6 +561,7 @@ docker volume rm tech-challenge_postgres_data
 ```
 
 3. **Network Issues**
+
 ```bash
 # List networks
 docker network ls
@@ -552,6 +574,7 @@ docker network rm tech-challenge_tech-challenge-network
 ```
 
 4. **Permission Issues**
+
 ```bash
 # Fix file permissions
 sudo chown -R $USER:$USER ./backend/node_modules
@@ -561,6 +584,7 @@ sudo chown -R $USER:$USER ./frontend/node_modules
 ## Best Practices
 
 ### 1. Use .dockerignore
+
 ```
 node_modules
 npm-debug.log
@@ -575,21 +599,25 @@ dist
 ```
 
 ### 2. Multi-stage Builds
+
 - Separate build and runtime environments
 - Smaller production images
 - Better security
 
 ### 3. Health Checks
+
 - Monitor service availability
 - Enable automatic restarts
 - Better orchestration
 
 ### 4. Resource Limits
+
 - Prevent resource exhaustion
 - Improve system stability
 - Better resource planning
 
 ### 5. Secrets Management
+
 - Never hardcode secrets
 - Use Docker secrets or external systems
 - Rotate secrets regularly

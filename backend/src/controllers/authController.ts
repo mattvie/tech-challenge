@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { User } from '../models';
+import { Op } from 'sequelize';
+import { User, Post } from '../models';
 import { generateToken } from '../utils/jwt';
 import { CreateUserRequest, LoginRequest, AuthenticatedRequest } from '../types';
 
@@ -10,9 +11,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Check if user already exists
     const existingUser = await User.findOne({
       where: {
-        $or: [{ email }, { username }],
+        [Op.or]: [{ email }, { username }],
       },
-    } as any);
+    });
 
     if (existingUser) {
       res.status(409).json({ 
@@ -98,7 +99,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
     const user = await User.findByPk(req.user.id, {
       include: [
         {
-          model: require('../models').Post,
+          model: Post,
           as: 'posts',
           attributes: ['id', 'title', 'createdAt'],
         },

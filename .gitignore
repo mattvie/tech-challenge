@@ -1,3 +1,6 @@
+**/*.fixed.*
+*.fixed.*
+
 # Logs
 logs
 *.log
