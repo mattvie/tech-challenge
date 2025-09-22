@@ -1,12 +1,22 @@
-import { Request, Response } from 'express';
-import { Op } from 'sequelize';
-import { User, Post } from '../models';
-import { generateToken } from '../utils/jwt';
-import { CreateUserRequest, LoginRequest, AuthenticatedRequest } from '../types';
+import { Request, Response } from "express";
+import { Op } from "sequelize";
+import { Post, User } from "../models";
+import {
+  AuthenticatedRequest,
+  CreateUserRequest,
+  LoginRequest,
+} from "../types";
+import { generateToken } from "../utils/jwt";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, email, password, firstName, lastName }: CreateUserRequest = req.body;
+    const {
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+    }: CreateUserRequest = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -16,8 +26,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (existingUser) {
-      res.status(409).json({ 
-        error: 'User already exists with this email or username' 
+      res.status(409).json({
+        error: "User already exists with this email or username",
       });
       return;
     }
@@ -39,13 +49,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     res.status(201).json({
-      message: 'User created successfully',
+      message: "User created successfully",
       user: user.toJSON(),
       token,
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -56,14 +66,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // Find user by email
     const user = await User.findOne({ where: { email } });
     if (!user || !user.isActive) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
     // Validate password
     const isValidPassword = await user.validatePassword(password);
     if (!isValidPassword) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
@@ -79,20 +89,23 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
 
     res.status(200).json({
-      message: 'Login successful',
+      message: "Login successful",
       user: user.toJSON(),
       token,
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const getProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getProfile = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: "User not authenticated" });
       return;
     }
 
@@ -100,14 +113,14 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
       include: [
         {
           model: Post,
-          as: 'posts',
-          attributes: ['id', 'title', 'createdAt'],
+          as: "posts",
+          attributes: ["id", "title", "createdAt"],
         },
       ],
     });
 
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
       return;
     }
 
@@ -115,21 +128,24 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Get profile error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const updateProfile = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: "User not authenticated" });
       return;
     }
 
     const user = await User.findByPk(req.user.id);
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
       return;
     }
 
@@ -142,11 +158,11 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response): P
     });
 
     res.status(200).json({
-      message: 'Profile updated successfully',
+      message: "Profile updated successfully",
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Update profile error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
