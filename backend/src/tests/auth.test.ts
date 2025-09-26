@@ -41,8 +41,8 @@ describe('Auth Controller', () => {
       expect(isInvalid).toBe(false);
     });
 
-    // Intentionally broken test
-    it('should fail - broken test example', async () => {
+    // Teste corrigido
+    it('should pass - corrected test example', async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -51,8 +51,8 @@ describe('Auth Controller', () => {
 
       const user = await User.create(userData);
       
-      // This test will fail because we're expecting the wrong value
-      expect(user.username).toBe('wrongusername');
+      // A verificação agora espera o valor correto.
+      expect(user.username).toBe(userData.username);
     });
   });
 
@@ -69,8 +69,8 @@ describe('Auth Controller', () => {
       expect(typeof token).toBe('string');
     });
 
-    // Intentionally broken test
-    it('should fail - broken JWT test', () => {
+    // Teste corrigido
+    it('should pass - corrected JWT test', () => {
       const payload = {
         id: 1,
         email: 'test@example.com',
@@ -79,8 +79,8 @@ describe('Auth Controller', () => {
 
       const token = generateToken(payload);
       
-      // This will fail because we're expecting undefined
-      expect(token).toBeUndefined();
+      // A verificação agora espera que o token seja definido (antes era indefinido)
+      expect(token).toBeDefined();
     });
   });
 });
