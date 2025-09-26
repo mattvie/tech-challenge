@@ -73,5 +73,10 @@
       "last 1 safari version"
     ]
   },
+  "jest": {
+    "transformIgnorePatterns": [
+      "/node_modules/(?!axios)/"
+    ]
+  },
   "proxy": "http://localhost:3001"
 }
