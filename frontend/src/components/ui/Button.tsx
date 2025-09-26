@@ -10,7 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       children,
@@ -51,25 +51,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         // Primary - Blue theme
         'bg-primary-600 text-white shadow-sm': variant === 'primary',
         'hover:bg-primary-700 hover:shadow-md': variant === 'primary' && !disabled && !isLoading,
-        'focus:ring-primary-500': variant === 'primary',
         'active:bg-primary-800': variant === 'primary' && !disabled && !isLoading,
         
         // Secondary - Gray theme
         'bg-secondary-100 text-secondary-900 border-secondary-200': variant === 'secondary',
         'hover:bg-secondary-200 hover:border-secondary-300': variant === 'secondary' && !disabled && !isLoading,
-        'focus:ring-secondary-500': variant === 'secondary',
         'active:bg-secondary-300': variant === 'secondary' && !disabled && !isLoading,
         
         // Outline
         'bg-transparent text-primary-700 border-primary-300': variant === 'outline',
         'hover:bg-primary-50 hover:border-primary-400': variant === 'outline' && !disabled && !isLoading,
-        'focus:ring-primary-500': variant === 'outline',
         'active:bg-primary-100': variant === 'outline' && !disabled && !isLoading,
         
         // Ghost
         'bg-transparent text-secondary-700': variant === 'ghost',
         'hover:bg-secondary-100 hover:text-secondary-900': variant === 'ghost' && !disabled && !isLoading,
-        'focus:ring-secondary-500': variant === 'ghost',
         'active:bg-secondary-200': variant === 'ghost' && !disabled && !isLoading,
         
         // Danger
@@ -77,6 +73,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'hover:bg-error-700 hover:shadow-md': variant === 'danger' && !disabled && !isLoading,
         'focus:ring-error-500': variant === 'danger',
         'active:bg-error-800': variant === 'danger' && !disabled && !isLoading,
+
+        // CONDIÇÕES COMBINADAS PARA EVITAR DUPLICATAS
+        'focus:ring-primary-500': variant === 'primary' || variant === 'outline',
+        'focus:ring-secondary-500': variant === 'secondary' || variant === 'ghost',
       },
       
       // Full width
@@ -147,5 +147,3 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = 'Button';
-
-export default Button;

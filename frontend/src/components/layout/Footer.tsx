@@ -23,23 +23,18 @@ export const Footer: React.FC = () => {
   return (
     <FooterContainer>
       <Container>
-        <Box py={8}>
-          <Flex 
-            flexDirection={['column', 'row']} 
-            justifyContent="space-between" 
-            alignItems={['flex-start', 'center']}
-            gap={4}
-          >
+        <Box className="py-8">
+          <Flex className="flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <Box>
-              <Text fontSize="lg" fontWeight="bold" color="white" mb={2}>
+              <Text className="text-lg font-bold text-white mb-2">
                 TechBlog
               </Text>
-              <Text fontSize="sm" color="gray.400">
+              <Text className="text-sm text-gray-400">
                 A modern blog platform for developers
               </Text>
             </Box>
             
-            <Flex gap={6}>
+            <Flex className="gap-6">
               <FooterLink href="#about">About</FooterLink>
               <FooterLink href="#privacy">Privacy</FooterLink>
               <FooterLink href="#terms">Terms</FooterLink>
@@ -47,13 +42,8 @@ export const Footer: React.FC = () => {
             </Flex>
           </Flex>
           
-          <Box 
-            borderTop="1px solid" 
-            borderColor="gray.700" 
-            pt={4} 
-            mt={8}
-          >
-            <Text fontSize="sm" color="gray.400" textAlign="center">
+          <Box className="border-t border-gray-700 pt-4 mt-8">
+            <Text className="text-sm text-gray-400 text-center">
               © {new Date().getFullYear()} TechBlog. All rights reserved.
             </Text>
           </Box>

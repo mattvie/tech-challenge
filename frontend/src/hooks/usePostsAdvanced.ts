@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { postService } from '../services/postService';
+import { useQuery, useMutation, useQueryClient, QueryKey } from 'react-query';
+import { postService, PostQuery } from '../services/postService';
 import { useAuth } from './useAuth';
-import { Post, CreatePostRequest, UpdatePostRequest } from '../types';
+import { Post, CreatePostRequest, UpdatePostRequest, User } from '../types';
 
 // Custom hook for managing posts
 export const usePostsAdvanced = (options?: {
@@ -25,10 +25,8 @@ export const usePostsAdvanced = (options?: {
     enabled = true
   } = options || {};
 
-  // Query key for caching
-  const queryKey = ['posts', { page, limit, search, tags, authorId }];
+  const queryKey: QueryKey = ['posts', { page, limit, search, tags, authorId }];
 
-  // Fetch posts query
   const {
     data: postsData,
     isLoading,
@@ -37,11 +35,12 @@ export const usePostsAdvanced = (options?: {
     isFetching
   } = useQuery(
     queryKey,
-    () => postService.getPosts({ page, limit, search, tags, authorId }),
+    // Correção aplicada em tags
+    () => postService.getPosts({ page, limit, search, tags: tags?.join(','), authorId }),
     {
       enabled,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
       keepPreviousData: true,
       onError: (error) => {
         console.error('Error fetching posts:', error);
@@ -49,14 +48,12 @@ export const usePostsAdvanced = (options?: {
     }
   );
 
-  // Create post mutation
   const createPostMutation = useMutation(
     (postData: CreatePostRequest) => postService.createPost(postData),
     {
-      onSuccess: (newPost) => {
-        // Invalidate and refetch posts
+      onSuccess: (data) => {
         queryClient.invalidateQueries(['posts']);
-        queryClient.setQueryData(['post', newPost.id], newPost);
+        queryClient.setQueryData(['post', data.post.id], data.post);
       },
       onError: (error) => {
         console.error('Error creating post:', error);
@@ -64,14 +61,12 @@ export const usePostsAdvanced = (options?: {
     }
   );
 
-  // Update post mutation
   const updatePostMutation = useMutation(
     ({ id, data }: { id: number; data: UpdatePostRequest }) =>
       postService.updatePost(id, data),
     {
-      onSuccess: (updatedPost) => {
-        // Update cache
-        queryClient.setQueryData(['post', updatedPost.id], updatedPost);
+      onSuccess: (data) => {
+        queryClient.setQueryData(['post', data.post.id], data.post);
         queryClient.invalidateQueries(['posts']);
       },
       onError: (error) => {
@@ -79,13 +74,11 @@ export const usePostsAdvanced = (options?: {
       }
     }
   );
-
-  // Delete post mutation
+  
   const deletePostMutation = useMutation(
     (postId: number) => postService.deletePost(postId),
     {
       onSuccess: (_, deletedPostId) => {
-        // Remove from cache
         queryClient.removeQueries(['post', deletedPostId]);
         queryClient.invalidateQueries(['posts']);
       },
@@ -94,21 +87,17 @@ export const usePostsAdvanced = (options?: {
       }
     }
   );
-
-  // Like/Unlike post mutation
+  
   const likePostMutation = useMutation(
     (postId: number) => postService.likePost(postId),
     {
       onMutate: async (postId) => {
-        // Cancel outgoing refetches
         await queryClient.cancelQueries(['post', postId]);
         await queryClient.cancelQueries(['posts']);
 
-        // Snapshot previous value
         const previousPost = queryClient.getQueryData(['post', postId]);
         const previousPosts = queryClient.getQueryData(queryKey);
 
-        // Optimistically update to new value
         queryClient.setQueryData(['post', postId], (old: any) => ({
           ...old,
           isLiked: !old?.isLiked,
@@ -122,7 +111,7 @@ export const usePostsAdvanced = (options?: {
               ? {
                   ...post,
                   isLiked: !post.isLiked,
-                  likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1,
+                  likeCount: (post.likeCount ?? 0) + (post.isLiked ? -1 : 1),
                 }
               : post
           ),
@@ -130,8 +119,7 @@ export const usePostsAdvanced = (options?: {
 
         return { previousPost, previousPosts };
       },
-      onError: (err, postId, context) => {
-        // Rollback on error
+      onError: (err, postId, context: any) => {
         if (context?.previousPost) {
           queryClient.setQueryData(['post', postId], context.previousPost);
         }
@@ -140,14 +128,12 @@ export const usePostsAdvanced = (options?: {
         }
       },
       onSettled: (data, error, postId) => {
-        // Always refetch after error or success
         queryClient.invalidateQueries(['post', postId]);
         queryClient.invalidateQueries(['posts']);
       },
     }
   );
 
-  // Helper functions
   const createPost = useCallback((postData: CreatePostRequest) => {
     return createPostMutation.mutateAsync(postData);
   }, [createPostMutation]);
@@ -170,45 +156,34 @@ export const usePostsAdvanced = (options?: {
   }, [likePostMutation, user]);
 
   const canEditPost = useCallback((post: Post) => {
-    return user && (user.id === post.authorId || user.role === 'admin');
+    return user && ((user as User).id === post.authorId || (user as any).role === 'admin');
   }, [user]);
 
   const canDeletePost = useCallback((post: Post) => {
-    return user && (user.id === post.authorId || user.role === 'admin');
+    return user && ((user as User).id === post.authorId || (user as any).role === 'admin');
   }, [user]);
 
   return {
-    // Data
     posts: postsData?.posts || [],
     pagination: postsData?.pagination,
-    
-    // Loading states
     isLoading,
     isFetching,
     isCreating: createPostMutation.isLoading,
     isUpdating: updatePostMutation.isLoading,
     isDeleting: deletePostMutation.isLoading,
     isLiking: likePostMutation.isLoading,
-    
-    // Error states
     error,
     createError: createPostMutation.error,
     updateError: updatePostMutation.error,
     deleteError: deletePostMutation.error,
     likeError: likePostMutation.error,
-    
-    // Actions
     createPost,
     updatePost,
     deletePost,
     likePost,
     refetch,
-    
-    // Utility functions
     canEditPost,
     canDeletePost,
-    
-    // Reset functions
     resetCreateError: createPostMutation.reset,
     resetUpdateError: updatePostMutation.reset,
     resetDeleteError: deletePostMutation.reset,
@@ -216,33 +191,34 @@ export const usePostsAdvanced = (options?: {
   };
 };
 
-// Hook for a single post
-export const usePost = (postId: number, enabled = true) => {
+export const usePost = (postId: number | null, enabled = true) => {
   const queryClient = useQueryClient();
 
   const {
-    data: post,
+    data, // Mudei para data para evitar conflito
     isLoading,
     error,
     refetch
   } = useQuery(
     ['post', postId],
-    () => postService.getPostById(postId),
+    () => postService.getPostById(postId!),
     {
       enabled: enabled && !!postId,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
     }
   );
+  
+  const post = data?.post;
 
-  // Prefetch related posts
   useEffect(() => {
     if (post?.tags && post.tags.length > 0) {
+      const tagsString = post.tags.slice(0, 3).join(',');
       queryClient.prefetchQuery(
-        ['posts', { tags: post.tags.slice(0, 3) }],
-        () => postService.getPosts({ tags: post.tags.slice(0, 3), limit: 5 }),
+        ['posts', { tags: tagsString }],
+        () => postService.getPosts({ tags: tagsString, limit: 5 }),
         {
-          staleTime: 10 * 60 * 1000, // 10 minutes
+          staleTime: 10 * 60 * 1000,
         }
       );
     }
@@ -256,33 +232,29 @@ export const usePost = (postId: number, enabled = true) => {
   };
 };
 
-// Hook for post drafts
 export const useDrafts = () => {
   const { user } = useAuth();
   
   return useQuery(
     ['posts', 'drafts', user?.id],
     () => postService.getPosts({ 
-      authorId: user?.id, 
+      authorId: (user as User)?.id, 
       published: false,
       limit: 50 
     }),
     {
       enabled: !!user,
-      staleTime: 2 * 60 * 1000, // 2 minutes
+      staleTime: 2 * 60 * 1000,
     }
   );
 };
 
-// Hook for managing post view tracking
 export const usePostView = (postId: number) => {
   const [hasViewed, setHasViewed] = useState(false);
 
   const trackView = useCallback(() => {
     if (!hasViewed && postId) {
-      // Track view (could be API call or analytics)
       setHasViewed(true);
-      // postService.trackView(postId);
     }
   }, [postId, hasViewed]);
 
@@ -292,13 +264,11 @@ export const usePostView = (postId: number) => {
   };
 };
 
-// Hook for post search with debouncing
 export const usePostSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -312,10 +282,10 @@ export const usePostSearch = () => {
     tags: selectedTags,
     enabled: debouncedSearchTerm.length > 0 || selectedTags.length > 0,
   });
-
-  const addTag = useCallback((tag: string) => {
-    setSelectedTags(prev => [...new Set([...prev, tag])]);
-  }, []);
+  
+const addTag = useCallback((tag: string) => {
+  setSelectedTags(prev => Array.from(new Set([...prev, tag])));
+}, []);
 
   const removeTag = useCallback((tag: string) => {
     setSelectedTags(prev => prev.filter(t => t !== tag));

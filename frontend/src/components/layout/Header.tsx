@@ -1,79 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
 import { Container, Flex, Box, Text, Button } from '../ui';
 import { useAuth } from '../../hooks/useAuth';
 
-const HeaderContainer = styled.header`
-  background-color: white;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.gray[200]};
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  /* Intentional performance issue: Missing will-change property */
-  box-shadow: ${({ theme }) => theme.shadows.sm};
-`;
-
-const Logo = styled(Link)`
-  font-size: ${({ theme }) => theme.fontSizes['2xl']};
-  font-weight: ${({ theme }) => theme.fontWeights.bold};
-  color: ${({ theme }) => theme.colors.primary[600]};
-  text-decoration: none;
-  
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary[700]};
-    text-decoration: none;
-  }
-`;
-
-const NavLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.gray[600]};
-  text-decoration: none;
-  padding: ${({ theme }) => theme.space[2]} ${({ theme }) => theme.space[4]};
-  border-radius: ${({ theme }) => theme.radii.md};
-  transition: all 0.2s ease-in-out;
-  
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.gray[100]};
-    color: ${({ theme }) => theme.colors.gray[900]};
-    text-decoration: none;
-  }
-`;
-
-const UserMenu = styled(Box)`
-  position: relative;
-  display: inline-block;
-`;
-
-const UserButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space[2]};
-  padding: ${({ theme }) => theme.space[2]};
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: ${({ theme }) => theme.radii.md};
-  transition: background-color 0.2s ease-in-out;
-  
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.gray[100]};
-  }
-`;
-
-const Avatar = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: ${({ theme }) => theme.radii.full};
-  background-color: ${({ theme }) => theme.colors.primary[500]};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: ${({ theme }) => theme.fontWeights.bold};
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-`;
-
+// O componente estilizado com classes do Tailwind
 export const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -82,48 +12,53 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <HeaderContainer>
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm will-change-transform">
       <Container>
-        <Flex 
-          alignItems="center" 
-          justifyContent="space-between" 
-          py={4}
-        >
-          <Logo to="/">
+        <div className="flex items-center justify-between py-4">
+          <Link to="/" className="text-2xl font-bold text-primary-600 hover:text-primary-700 no-underline">
             TechBlog
-          </Logo>
+          </Link>
           
-          <Flex alignItems="center" gap={4}>
-            <NavLink to="/">Posts</NavLink>
+          <nav className="flex items-center gap-4">
+            <Link to="/" className="text-gray-600 no-underline px-4 py-2 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-all">
+              Posts
+            </Link>
             
             {isAuthenticated ? (
               <>
-                <NavLink to="/create">Write</NavLink>
-                <UserMenu>
-                  <UserButton>
-                    <Avatar>
+                <Link to="/create" className="text-gray-600 no-underline px-4 py-2 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-all">
+                  Write
+                </Link>
+                <div className="relative inline-block">
+                  <button className="flex items-center gap-2 p-2 border-none bg-none cursor-pointer rounded-md hover:bg-gray-100 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold text-sm">
                       {user?.username?.charAt(0)?.toUpperCase() || 'U'}
-                    </Avatar>
-                    <Text fontSize="sm" color="gray.600">
+                    </div>
+                    <Text className="text-sm text-gray-600">
                       {user?.username}
                     </Text>
-                  </UserButton>
-                </UserMenu>
+                  </button>
+                </div>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   Logout
                 </Button>
               </>
             ) : (
               <>
-                <NavLink to="/login">Login</NavLink>
-                <Button as={Link} to="/register" size="sm">
-                  Sign Up
-                </Button>
+                <Link to="/login" className="text-gray-600 no-underline px-4 py-2 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-all">
+                  Login
+                </Link>
+                {/* Correção para o botão de link: envolva o Button com o Link */}
+                <Link to="/register">
+                  <Button size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
               </>
             )}
-          </Flex>
-        </Flex>
+          </nav>
+        </div>
       </Container>
-    </HeaderContainer>
+    </header>
   );
 };

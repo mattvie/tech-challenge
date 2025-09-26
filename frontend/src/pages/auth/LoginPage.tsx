@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Container, Box, Heading, Text, Button } from '../../components/ui';
+import { Box, Heading, Text, Button } from '../../components/ui';
 import { Form, FormGroup, Label, Input, ErrorText } from '../../components/forms';
 import { useAuth } from '../../hooks/useAuth';
 import { LoginRequest } from '../../types';
@@ -32,14 +32,11 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="400px" mx="auto">
+    <div className="max-w-sm mx-auto">
       <Box 
-        bg="white" 
-        p={8} 
-        borderRadius="lg" 
-        boxShadow="md"
+        className="bg-white p-8 rounded-lg shadow-md"
       >
-        <Heading as="h1" textAlign="center" mb={6}>
+        <Heading as="h1" className="text-center mb-6">
           Welcome Back
         </Heading>
         
@@ -82,21 +79,21 @@ export const LoginPage: React.FC = () => {
           
           <Button 
             type="submit" 
-            width="100%" 
+            fullWidth={true} 
             isLoading={isLoading}
-            isDisabled={isLoading}
+            disabled={isLoading}
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
         </Form>
         
-        <Text textAlign="center" mt={6} color="gray.600">
+        <Text className="text-center mt-6 text-gray-600">
           Don't have an account?{' '}
-          <Link to="/register">
+          <Link to="/register" className="text-primary-600 hover:underline">
             Sign up here
           </Link>
         </Text>
       </Box>
-    </Container>
+    </div>
   );
 };

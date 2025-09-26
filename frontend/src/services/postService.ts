@@ -14,6 +14,7 @@ export interface PostQuery {
   search?: string;
   tags?: string;
   authorId?: number;
+  published?: boolean;
 }
 
 export const postService = {
