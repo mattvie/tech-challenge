@@ -18,7 +18,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       lastName,
     }: CreateUserRequest = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       where: {
         [Op.or]: [{ email }, { username }],
@@ -32,7 +31,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Create new user
     const user = await User.create({
       username,
       email,
@@ -41,7 +39,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       lastName,
     });
 
-    // Generate token
     const token = generateToken({
       id: user.id,
       email: user.email,
@@ -54,6 +51,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       token,
     });
   } catch (error) {
+    // O errorHandler.ts cuidará de erros de validação do Sequelize
     console.error("Registration error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -63,25 +61,18 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password }: LoginRequest = req.body;
 
-    // Find user by email
     const user = await User.findOne({ where: { email } });
-    if (!user || !user.isActive) {
+
+    // Combinando a verificação de usuário e senha em um bloco torna a lógica mais clara
+    // e mantém uma resposta de erro genérica (que é importante por segurança)
+    if (!user || !user.isActive || !(await user.validatePassword(password))) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
-    // Validate password
-    const isValidPassword = await user.validatePassword(password);
-    if (!isValidPassword) {
-      res.status(401).json({ error: "Invalid credentials" });
-      return;
-    }
-
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
     const token = generateToken({
       id: user.id,
       email: user.email,
@@ -105,16 +96,22 @@ export const getProfile = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
+      // Esta verificação é redundante se o middleware authenticateToken for usado
+      // mas redundância é uma boa prática por questão de segurança
       res.status(401).json({ error: "User not authenticated" });
       return;
     }
 
     const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }, // Garante que a senha não seja retornada
       include: [
         {
           model: Post,
           as: "posts",
-          attributes: ["id", "title", "createdAt"],
+          attributes: ["id", "title", "createdAt", "isPublished"],
+          // imita e ordena os posts incluídos (+ performance)
+          limit: 5,
+          order: [['createdAt', 'DESC']],
         },
       ],
     });
@@ -149,6 +146,7 @@ export const updateProfile = async (
       return;
     }
 
+    // A validação já foi feita pelo middleware, então podemos usar req.body com segurança.
     const { firstName, lastName, avatar } = req.body;
 
     await user.update({

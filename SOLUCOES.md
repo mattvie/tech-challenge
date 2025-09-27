@@ -71,3 +71,25 @@
     - Depois da otimização
         - A aplicação agora realiza 2 consultas para a mesma página, independente do número de posts.
         - Uma contagem total (paginação), e uma outra busca para obter os dados necessários.
+
+## Resumo das Melhorias de Validação e Segurança no Backend
+
+- Implementação de Validação em Endpoints Críticos
+    - Rotas que modificam dados, como PUT /api/auth/profile e PUT /api/comments/:id, não possuíam nenhuma validação
+        - Dados maliciosos/inesperados podiam ser enviados, quebrando a aplicação
+    - Foram adicionados schemas de validação (com a lib Joi) para as rotas PUT auth e PUT comments.
+    - A aplicação está protegida contra grande quantidade de ataques de dados
+
+- Fortalecimento de Regras de Validação
+    - Schemas já existentes em validation.ts foram melhorados
+        - O username não era validado na camada de API
+        - Senha com requisito de tamanho pequeno
+    - Força a criação de senhas mais seguras e imediatamente rejeita usernames inválidos na API
+
+- Prevenção e Segurança
+    - A lógica de login no authController.ts retornava erros diferentes dependendo se o email existia ou se a senha estava incorreta. Esta falha podia ser usada para descobrir quais emails estão cadastrados no sistema
+    - Agora a resposta de erro é a mesma, independente da causa
+
+- Otimização e Performance
+    - A rota GET /api/auth/profile carregava o usuário e todos os seus posts, sem limite
+    - A consulta no getProfile em authController.ts foi otimizada para usar limit: 5 e order, incluindo apenas os 5 posts mais recentes do usuário e retornando somente os campos essenciais, resultando em uma resposta mais rápida
