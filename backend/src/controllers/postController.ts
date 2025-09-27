@@ -41,8 +41,8 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
       whereClause.authorId = parseInt(authorId);
     }
 
-    // Intentional N+1 query problem: This will cause performance issues
-    const posts = await Post.findAndCountAll({
+    // 1. A consulta principal agora usa "eager loading" para buscar comentários e likes
+    const { count, rows: posts } = await Post.findAndCountAll({
       where: whereClause,
       limit: limitNumber,
       offset,
@@ -53,38 +53,60 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
           as: 'author',
           attributes: ['id', 'username', 'avatar'],
         },
-        // Missing eager loading for comments and likes - will cause N+1 queries
+        {
+          model: Comment,
+          as: 'comments',
+          attributes: ['id'], // Otimização: precisamos apenas do ID para contar
+        },
+        {
+          model: Like,
+          as: 'likes',
+          attributes: ['userId'], // Otimização: precisamos apenas do userId para verificar
+        },
       ],
+      distinct: true, // Essencial para a contagem correta com `include` e `limit`
     });
 
-    // Intentionally inefficient: Making separate queries for each post
-    const postsWithCounts = await Promise.all(
-      posts.rows.map(async (post) => {
-        const commentCount = await Comment.count({ where: { postId: post.id } });
-        const likeCount = await Like.count({ where: { postId: post.id } });
-        const isLiked = req.user 
-          ? await Like.findOne({ where: { postId: post.id, userId: req.user.id } }) !== null
-          : false;
+    // 2. O bloco `Promise.all` ineficiente foi completamente removido.
 
-        return {
-          ...post.toJSON(),
-          commentCount,
-          likeCount,
-          isLiked,
-        };
-      })
-    );
+    // Transformamos os dados que JÁ recebemos do banco de forma eficiente
+    const postsWithCounts = posts.map((post) => {
+      // 1. Dizemos ao TS que postJSON pode ter 'comments' e 'likes'
+      const postJSON = post.toJSON() as any; 
+
+      // Contamos os itens dos arrays que já vieram na consulta
+      const commentCount = postJSON.comments?.length || 0;
+      const likeCount = postJSON.likes?.length || 0;
+
+      // Verificamo se o ID do usuário logado está no array de likes
+      const isLiked = req.user
+        // 2. Damos um tipo para 'like' para resolver o erro de 'any' implícito
+        ? postJSON.likes?.some((like: { userId: number }) => like.userId === req.user!.id) || false
+        : false;
+
+      // Limpamos os dados brutos para não poluir a resposta da API
+      delete postJSON.comments;
+      delete postJSON.likes;
+
+      return {
+        ...postJSON,
+        commentCount,
+        likeCount,
+        isLiked,
+      };
+    });
 
     res.status(200).json({
       posts: postsWithCounts,
       pagination: {
         currentPage: pageNumber,
-        totalPages: Math.ceil(posts.count / limitNumber),
-        totalItems: posts.count,
-        hasNextPage: pageNumber < Math.ceil(posts.count / limitNumber),
+        totalPages: Math.ceil(count / limitNumber),
+        totalItems: count,
+        hasNextPage: pageNumber < Math.ceil(count / limitNumber),
         hasPrevPage: pageNumber > 1,
       },
     });
+    
   } catch (error) {
     console.error('Get posts error:', error);
     res.status(500).json({ error: 'Internal server error' });

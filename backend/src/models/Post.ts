@@ -8,6 +8,9 @@ import {
   HasManyCountAssociationsMixin
 } from 'sequelize';
 import { sequelize } from '../config/database';
+import User from './User';
+import Comment from './Comment';
+import Like from './Like';
 
 interface PostAttributes {
   id: number;
@@ -40,27 +43,29 @@ class Post extends Model<PostAttributes, PostCreationAttributes> implements Post
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  // Associations
-  public getAuthor!: BelongsToGetAssociationMixin<any>;
-  public getComments!: HasManyGetAssociationsMixin<any>;
+  // Estas propriedades serão preenchidas quando usar 'include'
+  public readonly author?: User;
+  public readonly comments?: Comment[];
+  public readonly likes?: Like[];
+
+  public getAuthor!: BelongsToGetAssociationMixin<User>;
+  public getComments!: HasManyGetAssociationsMixin<Comment>;
   public countComments!: HasManyCountAssociationsMixin;
-  public getLikes!: HasManyGetAssociationsMixin<any>;
+  public getLikes!: HasManyGetAssociationsMixin<Like>;
   public countLikes!: HasManyCountAssociationsMixin;
 
   public static associations: {
-    author: Association<Post, any>;
-    comments: Association<Post, any>;
-    likes: Association<Post, any>;
+    author: Association<Post, User>;
+    comments: Association<Post, Comment>;
+    likes: Association<Post, Like>;
   };
 
-  // Intentionally inefficient method that will cause N+1 queries
   public async getCommentsWithAuthors(): Promise<any[]> {
     const comments = await this.getComments();
     const commentsWithAuthors = [];
     
-    // N+1 Query Problem: This will make a separate query for each comment's author
     for (const comment of comments) {
-      const author = await comment.getAuthor();
+      const author = await (comment as any).getAuthor(); // Type assertion needed here now
       commentsWithAuthors.push({
         ...comment.toJSON(),
         author: author.toJSON()
@@ -81,16 +86,12 @@ Post.init(
     title: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      validate: {
-        len: [1, 255],
-      },
+      validate: { len: [1, 255] },
     },
     content: {
       type: DataTypes.TEXT,
       allowNull: false,
-      validate: {
-        len: [1, 50000],
-      },
+      validate: { len: [1, 50000] },
     },
     excerpt: {
       type: DataTypes.TEXT,
@@ -122,10 +123,7 @@ Post.init(
     authorId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id',
-      },
+      references: { model: 'users', key: 'id' },
       onDelete: 'CASCADE',
     },
   },
@@ -133,19 +131,10 @@ Post.init(
     sequelize,
     tableName: 'posts',
     indexes: [
-      {
-        fields: ['authorId'],
-      },
-      {
-        fields: ['isPublished'],
-      },
-      {
-        fields: ['publishedAt'],
-      },
-      {
-        fields: ['tags'],
-        using: 'gin',
-      },
+      { fields: ['authorId'] },
+      { fields: ['isPublished'] },
+      { fields: ['publishedAt'] },
+      { fields: ['tags'], using: 'gin' },
     ],
   }
 );
