@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { postService } from '../../services/postService';
 import { Post } from '../../types';
 import { CommentSection } from '../../components/comments/CommentSection';
+import { LikeButton } from '../../components/posts/LikeButton';
 
 export const PostDetailPage: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null);
@@ -67,13 +68,20 @@ export const PostDetailPage: React.FC = () => {
         <div className="p-8 md:p-12">
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">{post.title}</h1>
           
-          <div className="flex items-center text-sm text-gray-500 mb-8">
-            <span>Por <strong>{post.author?.username}</strong></span>
-            <span className="mx-2">&middot;</span>
-            <span>{postDate}</span>
+          <div className="flex justify-between items-center text-sm text-gray-500 mb-8 border-b pb-4">
+            <div>
+              <span>Por <strong>{post.author?.username}</strong></span>
+              <span className="mx-2">&middot;</span>
+              <span>{postDate}</span>
+            </div>
+            {/* ADICIONAR O BOTÃO DE LIKE AQUI */}
+            <LikeButton
+              postId={post.id}
+              initialLikesCount={post.likesCount}
+              initialIsLiked={!!post.isLikedByCurrentUser}
+            />
           </div>
           
-          {/* Renderiza o conteúdo do post, tratando quebras de linha */}
           <div className="prose prose-lg max-w-none text-gray-800 whitespace-pre-wrap">
             {post.content}
           </div>

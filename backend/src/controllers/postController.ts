@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { Op } from 'sequelize';
 import { Post, User, Comment, Like } from '../models';
 import { AuthenticatedRequest, CreatePostRequest, UpdatePostRequest, PostQuery } from '../types';
+import { sequelize } from '../config/database';
 
 export const getPosts = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -14,6 +15,7 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
       tags,
       authorId,
     }: PostQuery = req.query;
+    const userId = req.user?.id;
 
     const pageNumber = parseInt(page);
     const limitNumber = parseInt(limit);
@@ -29,75 +31,52 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
         { content: { [Op.iLike]: `%${search}%` } },
       ];
     }
-
     if (tags) {
       const tagArray = tags.split(',').map(tag => tag.trim());
-      whereClause.tags = {
-        [Op.overlap]: tagArray,
-      };
+      whereClause.tags = { [Op.overlap]: tagArray };
     }
-
     if (authorId) {
       whereClause.authorId = parseInt(authorId);
     }
 
-    // 1. A consulta principal agora usa "eager loading" para buscar comentários e likes
     const { count, rows: posts } = await Post.findAndCountAll({
       where: whereClause,
       limit: limitNumber,
       offset,
       order: [[sortBy, sortOrder]],
+      attributes: {
+        // CORREÇÃO: Adicionamos subqueries para calcular os likes no banco de dados
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM likes AS "like"
+              WHERE "like"."postId" = "Post"."id"
+            )`),
+            'likesCount'
+          ],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0
+              FROM likes AS "userLike"
+              WHERE "userLike"."postId" = "Post"."id" AND "userLike"."userId" = ${userId || 'NULL'}
+            )`),
+            'isLikedByCurrentUser'
+          ]
+        ]
+      },
       include: [
         {
           model: User,
           as: 'author',
           attributes: ['id', 'username', 'avatar'],
-        },
-        {
-          model: Comment,
-          as: 'comments',
-          attributes: ['id'], // Otimização: precisamos apenas do ID para contar
-        },
-        {
-          model: Like,
-          as: 'likes',
-          attributes: ['userId'], // Otimização: precisamos apenas do userId para verificar
-        },
+        }
       ],
-      distinct: true, // Essencial para a contagem correta com `include` e `limit`
-    });
-
-    // 2. O bloco `Promise.all` ineficiente foi completamente removido.
-
-    // Transformamos os dados que JÁ recebemos do banco de forma eficiente
-    const postsWithCounts = posts.map((post) => {
-      // 1. Dizemos ao TS que postJSON pode ter 'comments' e 'likes'
-      const postJSON = post.toJSON() as any; 
-
-      // Contamos os itens dos arrays que já vieram na consulta
-      const commentCount = postJSON.comments?.length || 0;
-      const likeCount = postJSON.likes?.length || 0;
-
-      // Verificamo se o ID do usuário logado está no array de likes
-      const isLiked = req.user
-        // 2. Damos um tipo para 'like' para resolver o erro de 'any' implícito
-        ? postJSON.likes?.some((like: { userId: number }) => like.userId === req.user!.id) || false
-        : false;
-
-      // Limpamos os dados brutos para não poluir a resposta da API
-      delete postJSON.comments;
-      delete postJSON.likes;
-
-      return {
-        ...postJSON,
-        commentCount,
-        likeCount,
-        isLiked,
-      };
+      distinct: true,
     });
 
     res.status(200).json({
-      posts: postsWithCounts,
+      posts: posts, // Não precisamos mais do map, os dados já vêm corretos
       pagination: {
         currentPage: pageNumber,
         totalPages: Math.ceil(count / limitNumber),
@@ -113,17 +92,51 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
   }
 };
 
+// backend/src/controllers/postController.ts
+
 export const getPostById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
 
     const post = await Post.findByPk(parseInt(id), {
+      attributes: {
+        // CORREÇÃO: Mesma lógica de subquery da função getPosts
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM likes AS "like"
+              WHERE "like"."postId" = "Post"."id"
+            )`),
+            'likesCount'
+          ],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) > 0
+              FROM likes AS "userLike"
+              WHERE "userLike"."postId" = "Post"."id" AND "userLike"."userId" = ${userId || 'NULL'}
+            )`),
+            'isLikedByCurrentUser'
+          ]
+        ]
+      },
       include: [
         {
           model: User,
           as: 'author',
           attributes: ['id', 'username', 'firstName', 'lastName', 'avatar'],
         },
+        {
+          model: Comment,
+          as: 'comments',
+          include: [{
+            model: User,
+            as: 'author',
+            attributes: ['id', 'username', 'avatar']
+          }],
+          order: [['createdAt', 'DESC']]
+        }
       ],
     });
 
@@ -132,26 +145,13 @@ export const getPostById = async (req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
-    // Increment view count
+    // A contagem de views permanece igual
     post.viewCount += 1;
     await post.save();
-
-    // Intentional N+1 query problem: Get comments with authors inefficiently
-    const commentsWithAuthors = await post.getCommentsWithAuthors();
     
-    const likeCount = await Like.count({ where: { postId: post.id } });
-    const isLiked = req.user 
-      ? await Like.findOne({ where: { postId: post.id, userId: req.user.id } }) !== null
-      : false;
+    // As chamadas ineficientes para Like.count e Like.findOne foram removidas
+    res.status(200).json({ post });
 
-    res.status(200).json({
-      post: {
-        ...post.toJSON(),
-        comments: commentsWithAuthors,
-        likeCount,
-        isLiked,
-      },
-    });
   } catch (error) {
     console.error('Get post by id error:', error);
     res.status(500).json({ error: 'Internal server error' });

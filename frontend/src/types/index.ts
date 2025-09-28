@@ -29,6 +29,8 @@ export interface Post {
   likeCount?: number;
   isLiked?: boolean;
   comments?: Comment[];
+  likesCount: number;
+  isLikedByCurrentUser?: boolean;
 }
 
 export interface Comment {

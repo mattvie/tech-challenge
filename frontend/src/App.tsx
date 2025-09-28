@@ -10,7 +10,6 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
-// import { HomePage } from './pages/posts/HomePage';
 import { CreatePostPage } from './pages/posts/CreatePostPage';
 import { PostDetailPage } from './pages/posts/PostDetailPage';
 

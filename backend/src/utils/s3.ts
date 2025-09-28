@@ -9,11 +9,14 @@ const s3 = new S3({
 
 export const uploadToS3 = (
   file: Express.Multer.File,
-  key: string
+  folder: string = 'uploads'
 ): Promise<ManagedUpload.SendData> => {
+  const randomPart = Math.random().toString(36).substring(2, 8);
+  const fileName = `${folder}/${Date.now()}-${randomPart}-${file.originalname}`;
+
   const params = {
     Bucket: process.env.AWS_S3_BUCKET as string,
-    Key: key,
+    Key: fileName,
     Body: file.buffer,
     ContentType: file.mimetype,
   };
