@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ReactMarkdown from 'react-markdown';
+// @ts-ignore 
+import rehypeRaw from 'rehype-raw';
+// @ts-ignore 
+import remarkGfm from 'remark-gfm';
+
 import { postService } from '../../services/postService';
 import { Post } from '../../types';
 import { CommentSection } from '../../components/comments/CommentSection';
 import { LikeButton } from '../../components/posts/LikeButton';
+import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../../components/ui/Button';
 
 export const PostDetailPage: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null);
@@ -13,6 +21,20 @@ export const PostDetailPage: React.FC = () => {
 
   const { id } = useParams<{ id: string }>();
   const postId = Number(id);
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
+  const handleDelete = async () => {
+    if (window.confirm('Tem certeza que deseja deletar este post? Esta ação é irreversível.')) {
+      try {
+        await postService.deletePost(postId);
+        toast.success('Post deletado com sucesso!');
+        navigate('/');
+      } catch (err) {
+        toast.error('Falha ao deletar o post.');
+      }
+    }
+  };
 
   useEffect(() => {
     if (!postId) {
@@ -37,6 +59,9 @@ export const PostDetailPage: React.FC = () => {
     fetchPost();
   }, [postId]);
 
+
+  const isAuthor = isAuthenticated && post && user?.id === post.authorId;
+  
   if (loading) {
     return <div className="text-center py-20">Carregando post...</div>;
   }
@@ -66,6 +91,17 @@ export const PostDetailPage: React.FC = () => {
           className="w-full h-96 object-cover"
         />
         <div className="p-8 md:p-12">
+          {isAuthor && (
+            <div className="flex items-center gap-4 mb-4">
+              <Link to={`/post/${post.id}/edit`}>
+                <Button variant="outline" size="sm">Editar Post</Button>
+              </Link>
+              <Button onClick={handleDelete} variant="danger" size="sm">
+                Deletar Post
+              </Button>
+            </div>
+          )}
+
           <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">{post.title}</h1>
           
           <div className="flex justify-between items-center text-sm text-gray-500 mb-8 border-b pb-4">
@@ -74,16 +110,17 @@ export const PostDetailPage: React.FC = () => {
               <span className="mx-2">&middot;</span>
               <span>{postDate}</span>
             </div>
-            {/* ADICIONAR O BOTÃO DE LIKE AQUI */}
             <LikeButton
               postId={post.id}
-              initialLikesCount={post.likesCount}
+              initialLikesCount={post.likesCount || 0}
               initialIsLiked={!!post.isLikedByCurrentUser}
             />
           </div>
           
-          <div className="prose prose-lg max-w-none text-gray-800 whitespace-pre-wrap">
-            {post.content}
+          <div className="prose prose-lg max-w-none text-gray-800">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {post.content}
+            </ReactMarkdown>
           </div>
         </div>
       </div>

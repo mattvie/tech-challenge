@@ -12,6 +12,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { CreatePostPage } from './pages/posts/CreatePostPage';
 import { PostDetailPage } from './pages/posts/PostDetailPage';
+import { EditPostPage } from './pages/posts/EditPostPage';
 
 const HomePage = lazy(() => import('./pages/posts/HomePage'));
 
@@ -73,6 +74,15 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           } 
         />
+
+        <Route 
+            path="/post/:id/edit" 
+            element={
+              <ProtectedRoute>
+                <EditPostPage />
+              </ProtectedRoute>
+            } 
+          />
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
