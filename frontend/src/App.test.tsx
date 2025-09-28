@@ -4,7 +4,7 @@ import App from './App';
 
 test('renders the main application logo', () => {
   render(<App />);
-  const logoElement = screen.getByRole('link', { name: /TechBlog/i });
+  const logoElement = screen.getByRole('link', { name: /BlogTech/i });
   
   expect(logoElement).toBeInTheDocument();
 });

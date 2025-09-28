@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { ToastContainer } from 'react-toastify';
@@ -16,9 +16,9 @@ import { LoginPage } from './pages/auth/LoginPage';
 
 // Simple placeholder components for now
 const RegisterPage = () => <div>Register Page - Coming Soon</div>;
-const HomePage = () => <div>Home Page - Coming Soon</div>;
 const CreatePostPage = () => <div>Create Post Page - Coming Soon</div>;
 const PostDetailPage = () => <div>Post Detail Page - Coming Soon</div>;
+const HomePage = lazy(() => import('./pages/posts/HomePage'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -47,7 +47,8 @@ const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 const AppRoutes: React.FC = () => {
   return (
     <Layout>
-      <Routes>
+      <Suspense fallback={<div>Loading Page...</div>}>
+        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/post/:id" element={<PostDetailPage />} />
         
@@ -80,6 +81,7 @@ const AppRoutes: React.FC = () => {
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+        </Suspense>
     </Layout>
   );
 };

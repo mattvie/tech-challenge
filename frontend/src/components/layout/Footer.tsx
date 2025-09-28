@@ -1,54 +1,16 @@
 import React from 'react';
-import styled from 'styled-components';
-import { Container, Box, Text, Flex } from '../ui';
-
-const FooterContainer = styled.footer`
-  background-color: ${({ theme }) => theme.colors.gray[900]};
-  color: ${({ theme }) => theme.colors.gray[300]};
-  margin-top: auto;
-`;
-
-const FooterLink = styled.a`
-  color: ${({ theme }) => theme.colors.gray[400]};
-  text-decoration: none;
-  transition: color 0.2s ease-in-out;
-  
-  &:hover {
-    color: ${({ theme }) => theme.colors.white};
-    text-decoration: underline;
-  }
-`;
 
 export const Footer: React.FC = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <FooterContainer>
-      <Container>
-        <Box className="py-8">
-          <Flex className="flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <Box>
-              <Text className="text-lg font-bold text-white mb-2">
-                TechBlog
-              </Text>
-              <Text className="text-sm text-gray-400">
-                A modern blog platform for developers
-              </Text>
-            </Box>
-            
-            <Flex className="gap-6">
-              <FooterLink href="#about">About</FooterLink>
-              <FooterLink href="#privacy">Privacy</FooterLink>
-              <FooterLink href="#terms">Terms</FooterLink>
-              <FooterLink href="#contact">Contact</FooterLink>
-            </Flex>
-          </Flex>
-          
-          <Box className="border-t border-gray-700 pt-4 mt-8">
-            <Text className="text-sm text-gray-400 text-center">
-              © {new Date().getFullYear()} TechBlog. All rights reserved.
-            </Text>
-          </Box>
-        </Box>
-      </Container>
-    </FooterContainer>
+    <footer className="bg-gray-800 text-white mt-auto">
+      <div className="container mx-auto px-4 py-6 text-center">
+        <p>&copy; {currentYear} BlogTech. Todos os direitos reservados.</p>
+        <p className="text-sm text-gray-400 mt-1">
+          Um Desafio Técnico feito com React, Node.js e muito café.
+        </p>
+      </div>
+    </footer>
   );
 };
