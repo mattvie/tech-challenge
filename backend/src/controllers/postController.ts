@@ -92,8 +92,6 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
   }
 };
 
-// backend/src/controllers/postController.ts
-
 export const getPostById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -214,7 +212,6 @@ export const updatePost = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    // Check if user is the author
     if (post.authorId !== req.user.id) {
       res.status(403).json({ error: 'Not authorized to update this post' });
       return;
@@ -263,7 +260,6 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    // Check if user is the author
     if (post.authorId !== req.user.id) {
       res.status(403).json({ error: 'Not authorized to delete this post' });
       return;

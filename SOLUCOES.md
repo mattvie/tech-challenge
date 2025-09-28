@@ -93,3 +93,41 @@
 - Otimização e Performance
     - A rota GET /api/auth/profile carregava o usuário e todos os seus posts, sem limite
     - A consulta no getProfile em authController.ts foi otimizada para usar limit: 5 e order, incluindo apenas os 5 posts mais recentes do usuário e retornando somente os campos essenciais, resultando em uma resposta mais rápida
+
+## Resumo das Melhorias de UX/CSS no Frontend
+
+- Unificação do Sistema de Estilização
+    - O sistema de estilos foi padronizado para usar exclusivamente Tailwind CSS, eliminando o uso de styled-components.
+    - Componentes de formulário, Header, Footer e o Layout principal foram completamente refatorados para usar classes do Tailwind, garantindo um design moderno, coeso e responsivo.
+
+- Implementação Completa da Interface
+    - Todas as páginas que eram placeholders (Registro, Criar Post, Detalhes de Post) foram implementadas com interfaces funcionais e estilizadas
+    - A página inicial agora exibe os posts em um grid responsivo, utilizando um componente de Card reutilizável.
+
+## Resumo da Implementação de Funcionalidades no Frontend
+
+- CRUD Completo para Posts
+    - Foi implementada a funcionalidade completa de Criar, Ler, Atualizar e Deletar posts.
+    - Botões de Edição e Deleção agora aparecem na página de detalhes do post apenas para o autor, garantindo o controle de permissão.
+
+- Likes
+    - Implementado um sistema de "curtir" e "descurtir" posts. A UI é atualizada de forma otimista para uma melhor experiência do usuário, e a contagem de likes persiste ao recarregar a página.
+
+- Comentários
+    - A página de detalhes do post agora inclui uma seção de comentários, onde usuários logados podem adicionar novos comentários e ver os já existentes em tempo real.
+
+- Suporte a Markdown
+    - O conteúdo dos posts agora é renderizado como Markdown, permitindo a formatação de texto com títulos, negrito, listas, links, etc. O plugin @tailwindcss/typography foi usado para garantir que o conteúdo formatado seja exibido de forma limpa e legível.
+
+## Resumo da Correção de Bugs e Configuração de Ambiente
+
+- Configuração de Desenvolvimento do Docker
+    - O ambiente Docker foi ajustado para que o backend e o frontend rodem em modo de desenvolvimento, garantindo o hot-reloading (atualização automática do código) em ambos os serviços, o que agilizou drasticamente o desenvolvimento.
+
+- Correção de Upload de Imagens (Amazon S3)
+    - Foi resolvido um erro crítico de AccessControlListNotSupported ao remover o envio de ACLs via código e, em vez disso, configurar uma Política de Bucket no S3 para garantir o acesso público às imagens.
+    - Foi corrigido um bug que causava a sobrescrita de imagens no S3, garantindo que cada upload tenha um nome de arquivo único.
+
+- Resolução de Bugs de API e Frontend
+    - Corrigido o bug que exibia NaN na contagem de likes, garantindo a correta conversão de tipos de dados entre o backend e o frontend.
+    - Resolvidos múltiplos erros de TypeScript e de configuração que impediam a compilação e o funcionamento correto da aplicação.

@@ -3,9 +3,6 @@ import User from './User';
 import Post from './Post';
 import Comment from './Comment';
 import Like from './Like';
-import Category from './Category';
-import Tag from './Tag';
-import PostTag from './PostTag';
 
 // User associations
 User.hasMany(Post, {
@@ -85,7 +82,4 @@ export default {
   Post,
   Comment,
   Like,
-  Category,
-  Tag,
-  PostTag,
 };
